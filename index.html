@@ -48,7 +48,14 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     line-height:1.5;
   }
-  .wrap{max-width:800px; margin:0 auto; padding:2rem 1.25rem 4rem;}
+  .wrap{max-width:1360px; margin:0 auto; padding:2rem 1.5rem 4rem;}
+  .dashboard{display:grid; grid-template-columns:1fr; gap:0 2.5rem;}
+  .col-right{margin-top:2.5rem;}
+  @media (min-width:960px){
+    .dashboard{grid-template-columns:1.35fr 1fr; align-items:start;}
+    .col-right{margin-top:0;}
+    .col{min-width:0;}
+  }
   h1{font-size:20px; font-weight:600; margin:0 0 4px;}
   .subtitle{font-size:13px; color:var(--text-secondary); margin:0 0 1.75rem;}
   .section-label{font-size:14px; font-weight:600; margin:0 0 10px; display:flex; justify-content:space-between; align-items:center;}
@@ -102,99 +109,107 @@
   <h1>Budget calendar and debt payoff planner</h1>
   <p class="subtitle">Two payouts a month, with expenses and debt payments allocated to each. Saved automatically.</p>
 
-  <div class="section-label"><span>Payouts</span></div>
-  <div id="payout-list" class="cards"></div>
+  <div class="dashboard">
+    <div class="col col-left">
 
-  <div id="summary-cards" class="cards"></div>
+      <div class="section-label"><span>Payouts</span></div>
+      <div id="payout-list" class="cards"></div>
 
-  <div style="margin-bottom:1.5rem;">
-    <div class="section-label">
-      <span>Fixed expenses</span>
-      <button id="add-expense"><span aria-hidden="true">+</span> Add expense</button>
+      <div id="summary-cards" class="cards"></div>
+
+      <div style="margin-bottom:1.5rem;">
+        <div class="section-label">
+          <span>Fixed expenses</span>
+          <button id="add-expense"><span aria-hidden="true">+</span> Add expense</button>
+        </div>
+        <div id="expense-list"></div>
+      </div>
+
+      <div style="margin-bottom:1.5rem;">
+        <div class="section-label">
+          <span>Variable expenses (monthly budget caps)</span>
+          <button id="add-variable"><span aria-hidden="true">+</span> Add category</button>
+        </div>
+        <div id="variable-list"></div>
+      </div>
+
+      <div class="row" style="margin-bottom:10px; justify-content:space-between;">
+        <div class="row" style="margin-bottom:0;">
+          <button id="cal-prev" aria-label="Previous month">&larr;</button>
+          <button id="cal-today">Today</button>
+          <button id="cal-next" aria-label="Next month">&rarr;</button>
+        </div>
+        <div class="row" style="margin-bottom:0;">
+          <label style="font-size:13px; color:var(--text-secondary);">Jump to date</label>
+          <input type="date" id="date-search" style="height:36px;">
+          <button id="date-search-clear">Clear</button>
+        </div>
+      </div>
+      <div id="calendar-wrap" style="margin-bottom:0;"></div>
+
     </div>
-    <div id="expense-list"></div>
-  </div>
 
-  <div style="margin-bottom:1.5rem;">
-    <div class="section-label">
-      <span>Variable expenses (monthly budget caps)</span>
-      <button id="add-variable"><span aria-hidden="true">+</span> Add category</button>
-    </div>
-    <div id="variable-list"></div>
-  </div>
+    <div class="col col-right">
 
-  <div class="row" style="margin-bottom:10px; justify-content:space-between;">
-    <div class="row" style="margin-bottom:0;">
-      <button id="cal-prev" aria-label="Previous month">&larr;</button>
-      <button id="cal-today">Today</button>
-      <button id="cal-next" aria-label="Next month">&rarr;</button>
-    </div>
-    <div class="row" style="margin-bottom:0;">
-      <label style="font-size:13px; color:var(--text-secondary);">Jump to date</label>
-      <input type="date" id="date-search" style="height:36px;">
-      <button id="date-search-clear">Clear</button>
-    </div>
-  </div>
-  <div id="calendar-wrap" style="margin-bottom:2rem;"></div>
+      <div class="section-label">
+        <span>Debts (snowball: smallest balance first)</span>
+        <button id="add-debt"><span aria-hidden="true">+</span> Add debt</button>
+      </div>
+      <div id="debt-list"></div>
 
-  <div class="divider"></div>
+      <div class="row" style="margin:1rem 0 1.5rem;">
+        <label style="font-size:14px; color:var(--text-secondary);">Extra toward debt each month</label>
+        <input type="number" id="extra-input" class="field-wide" step="100">
+        <select id="extra-payout-select" class="payout-select"></select>
+      </div>
 
-  <div class="section-label">
-    <span>Debts (snowball: smallest balance first)</span>
-    <button id="add-debt"><span aria-hidden="true">+</span> Add debt</button>
-  </div>
-  <div id="debt-list"></div>
+      <div id="payoff-summary" class="cards"></div>
+      <div id="payoff-order"></div>
 
-  <div class="row" style="margin:1rem 0 1.5rem;">
-    <label style="font-size:14px; color:var(--text-secondary);">Extra toward debt each month</label>
-    <input type="number" id="extra-input" class="field-wide" step="100">
-    <select id="extra-payout-select" class="payout-select"></select>
-  </div>
+      <div class="divider"></div>
 
-  <div id="payoff-summary" class="cards"></div>
-  <div id="payoff-order"></div>
+      <div class="section-label">
+        <span>Fixed savings &amp; investments</span>
+        <button id="add-savingsplan"><span aria-hidden="true">+</span> Add contribution</button>
+      </div>
+      <div id="savingsplan-list"></div>
 
-  <div class="divider"></div>
+      <div class="divider"></div>
 
-  <div class="section-label">
-    <span>Fixed savings &amp; investments</span>
-    <button id="add-savingsplan"><span aria-hidden="true">+</span> Add contribution</button>
-  </div>
-  <div id="savingsplan-list"></div>
+      <div class="section-label"><span>Allocation by payout</span></div>
+      <div id="payout-breakdown" class="cards"></div>
 
-  <div class="divider"></div>
+      <div class="divider"></div>
 
-  <div class="section-label"><span>Allocation by payout</span></div>
-  <div id="payout-breakdown" class="cards"></div>
+      <div class="section-label"><span>Savings / leftover fund</span></div>
+      <div id="savings-summary" class="cards"></div>
 
-  <div class="divider"></div>
+      <div style="margin-bottom:1.25rem;">
+        <p style="font-size:13px; font-weight:500; margin:0 0 8px;">Log a sudden expense</p>
+        <div class="row" style="margin-bottom:0;">
+          <input type="text" id="sudden-note" placeholder="e.g. Bought food">
+          <input type="number" id="sudden-amount" placeholder="Amount" class="field-wide" style="width:140px;">
+          <button id="sudden-add">Log expense</button>
+        </div>
+      </div>
 
-  <div class="section-label"><span>Savings / leftover fund</span></div>
-  <div id="savings-summary" class="cards"></div>
+      <div class="row" style="margin-bottom:10px;">
+        <input type="number" id="savings-amount" placeholder="Amount (+ adds, - withdraws)" class="field-wide" style="width:180px;">
+        <input type="text" id="savings-note" placeholder="Note (optional)">
+        <button id="savings-add">Record</button>
+        <button id="savings-quickadd" title="Prefill with what's left unspent across your variable expense budgets">Use variable expense leftover</button>
+        <button id="savingsplan-quickadd" title="Prefill with this month's total fixed savings and investment contributions">Add fixed savings for this month</button>
+      </div>
+      <div id="savings-log"></div>
 
-  <div style="margin-bottom:1.25rem;">
-    <p style="font-size:13px; font-weight:500; margin:0 0 8px;">Log a sudden expense</p>
-    <div class="row" style="margin-bottom:0;">
-      <input type="text" id="sudden-note" placeholder="e.g. Bought food">
-      <input type="number" id="sudden-amount" placeholder="Amount" class="field-wide" style="width:140px;">
-      <button id="sudden-add">Log expense</button>
+      <div class="divider"></div>
+
+      <div class="section-label"><span>Export</span></div>
+      <p style="font-size:13px; color:var(--text-secondary); margin:0 0 10px;">Download everything below as a structured XML file \u2014 hand it to an AI agent (or paste its contents into a chat) to get help spotting problems or planning next steps.</p>
+      <button id="export-xml">Export for AI analysis (.xml)</button>
+
     </div>
   </div>
-
-  <div class="row" style="margin-bottom:10px;">
-    <input type="number" id="savings-amount" placeholder="Amount (+ adds, - withdraws)" class="field-wide" style="width:180px;">
-    <input type="text" id="savings-note" placeholder="Note (optional)">
-    <button id="savings-add">Record</button>
-    <button id="savings-quickadd" title="Prefill with what's left unspent across your variable expense budgets">Use variable expense leftover</button>
-    <button id="savingsplan-quickadd" title="Prefill with this month's total fixed savings and investment contributions">Add fixed savings for this month</button>
-  </div>
-  <div id="savings-log"></div>
-
-  <div class="divider"></div>
-
-  <div class="section-label"><span>Export</span></div>
-  <p style="font-size:13px; color:var(--text-secondary); margin:0 0 10px;">Download everything below as a structured XML file \u2014 hand it to an AI agent (or paste its contents into a chat) to get help spotting problems or planning next steps.</p>
-  <button id="export-xml">Export for AI analysis (.xml)</button>
 
   <p class="save-note">Your numbers are saved on this device. <button class="reset-link" id="reset-all">Reset to defaults</button></p>
 </div>
