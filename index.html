@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Budget calendar and debt payoff planner</title>
+<style>
+  :root{
+    --bg: #F6F7F5;
+    --surface: #FFFFFF;
+    --surface-2: #EFF1EE;
+    --text-primary: #1B1F1D;
+    --text-secondary: #5B625C;
+    --text-muted: #8A9089;
+    --border: #DDE1DA;
+    --accent: #0E7C5E;
+    --accent-bg: #E4F3EC;
+    --accent-text: #0B5C46;
+    --income: #2563A8;
+    --income-bg: #E3EDF7;
+    --income-text: #1B4A78;
+    --danger: #B3401F;
+    --danger-bg: #FBEAE3;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg: #16181B;
+      --surface: #1F2225;
+      --surface-2: #262A2D;
+      --text-primary: #EDEFEC;
+      --text-secondary: #A7ACA6;
+      --text-muted: #767C77;
+      --border: #33373A;
+      --accent: #34C58D;
+      --accent-bg: #163329;
+      --accent-text: #6BDDAA;
+      --income: #5B9BD9;
+      --income-bg: #1B2D3F;
+      --income-text: #8FC0EE;
+      --danger: #E27253;
+      --danger-bg: #3A241C;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height:1.5;
+  }
+  .wrap{max-width:800px; margin:0 auto; padding:2rem 1.25rem 4rem;}
+  h1{font-size:20px; font-weight:600; margin:0 0 4px;}
+  .subtitle{font-size:13px; color:var(--text-secondary); margin:0 0 1.75rem;}
+  .section-label{font-size:14px; font-weight:600; margin:0 0 10px; display:flex; justify-content:space-between; align-items:center;}
+  .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-bottom:1.5rem;}
+  .card{background:var(--surface); border:0.5px solid var(--border); border-radius:var(--radius); padding:14px;}
+  .card p{margin:0;}
+  .card .label{font-size:12px; color:var(--text-secondary); margin-bottom:4px;}
+  .card .value{font-size:20px; font-weight:600;}
+  .card .sub{font-size:11px; color:var(--text-muted); margin-top:6px;}
+  .payout-card{border-left:3px solid var(--income);}
+  .row{display:flex; gap:8px; align-items:center; margin-bottom:6px; flex-wrap:wrap;}
+  input[type=text], input[type=number], select{
+    background:var(--surface); border:0.5px solid var(--border); border-radius:8px;
+    padding:8px 10px; font-size:14px; color:var(--text-primary); height:36px;
+  }
+  input[type=text]{flex:1; min-width:100px;}
+  input:focus, select:focus{outline:none; box-shadow:0 0 0 2px var(--accent-bg); border-color:var(--accent);}
+  button{
+    background:var(--surface); border:0.5px solid var(--border); border-radius:8px;
+    padding:7px 12px; font-size:13px; color:var(--text-primary); cursor:pointer;
+  }
+  button:hover{background:var(--surface-2);}
+  button:active{transform:scale(0.98);}
+  .icon-btn{padding:7px 10px;}
+  .field{width:80px;}
+  .field-wide{width:110px;}
+  .payout-select{width:150px;}
+  .divider{border-top:0.5px solid var(--border); margin:2rem 0;}
+  .cal-head{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; margin-bottom:6px;}
+  .cal-head div{font-size:11px; color:var(--text-muted); text-align:center;}
+  .cal-grid{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px;}
+  .cal-cell{border:0.5px solid var(--border); border-radius:8px; min-height:64px; padding:6px; background:var(--surface);}
+  .cal-cell.has-exp{background:var(--accent-bg);}
+  .cal-cell.is-payout{border-color:var(--income); box-shadow:inset 0 0 0 1px var(--income);}
+  .cal-cell.is-searched{border-color:var(--accent-text); box-shadow:inset 0 0 0 2px var(--accent-text);}
+  .cal-day{font-size:11px; color:var(--text-secondary);}
+  .cal-amt{font-size:12px; font-weight:600; color:var(--accent-text); margin-top:2px;}
+  .cal-payout{font-size:11px; font-weight:600; color:var(--income-text); margin-top:2px;}
+  .legend{display:flex; gap:16px; font-size:12px; color:var(--text-secondary); margin-top:10px;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .dot{width:9px; height:9px; border-radius:3px; display:inline-block;}
+  .debt-row{display:flex; justify-content:space-between; align-items:center; border:0.5px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:6px; background:var(--surface);}
+  .debt-row .name{font-size:14px;}
+  .debt-row .meta{font-size:12px; color:var(--text-secondary);}
+  .save-note{font-size:12px; color:var(--text-muted); margin-top:2rem; text-align:center;}
+  .reset-link{background:none; border:none; color:var(--text-muted); text-decoration:underline; cursor:pointer; font-size:12px; padding:0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Budget calendar and debt payoff planner</h1>
+  <p class="subtitle">Two payouts a month, with expenses and debt payments allocated to each. Saved automatically.</p>
+
+  <div class="section-label"><span>Payouts</span></div>
+  <div id="payout-list" class="cards"></div>
+
+  <div id="summary-cards" class="cards"></div>
+
+  <div style="margin-bottom:1.5rem;">
+    <div class="section-label">
+      <span>Fixed expenses</span>
+      <button id="add-expense"><span aria-hidden="true">+</span> Add expense</button>
+    </div>
+    <div id="expense-list"></div>
+  </div>
+
+  <div style="margin-bottom:1.5rem;">
+    <div class="section-label">
+      <span>Variable expenses (monthly budget caps)</span>
+      <button id="add-variable"><span aria-hidden="true">+</span> Add category</button>
+    </div>
+    <div id="variable-list"></div>
+  </div>
+
+  <div class="row" style="margin-bottom:10px; justify-content:space-between;">
+    <div class="row" style="margin-bottom:0;">
+      <button id="cal-prev" aria-label="Previous month">&larr;</button>
+      <button id="cal-today">Today</button>
+      <button id="cal-next" aria-label="Next month">&rarr;</button>
+    </div>
+    <div class="row" style="margin-bottom:0;">
+      <label style="font-size:13px; color:var(--text-secondary);">Jump to date</label>
+      <input type="date" id="date-search" style="height:36px;">
+      <button id="date-search-clear">Clear</button>
+    </div>
+  </div>
+  <div id="calendar-wrap" style="margin-bottom:2rem;"></div>
+
+  <div class="divider"></div>
+
+  <div class="section-label">
+    <span>Debts (snowball: smallest balance first)</span>
+    <button id="add-debt"><span aria-hidden="true">+</span> Add debt</button>
+  </div>
+  <div id="debt-list"></div>
+
+  <div class="row" style="margin:1rem 0 1.5rem;">
+    <label style="font-size:14px; color:var(--text-secondary);">Extra toward debt each month</label>
+    <input type="number" id="extra-input" class="field-wide" step="100">
+    <select id="extra-payout-select" class="payout-select"></select>
+  </div>
+
+  <div id="payoff-summary" class="cards"></div>
+  <div id="payoff-order"></div>
+
+  <div class="divider"></div>
+
+  <div class="section-label">
+    <span>Fixed savings &amp; investments</span>
+    <button id="add-savingsplan"><span aria-hidden="true">+</span> Add contribution</button>
+  </div>
+  <div id="savingsplan-list"></div>
+
+  <div class="divider"></div>
+
+  <div class="section-label"><span>Allocation by payout</span></div>
+  <div id="payout-breakdown" class="cards"></div>
+
+  <div class="divider"></div>
+
+  <div class="section-label"><span>Savings / leftover fund</span></div>
+  <div id="savings-summary" class="cards"></div>
+
+  <div style="margin-bottom:1.25rem;">
+    <p style="font-size:13px; font-weight:500; margin:0 0 8px;">Log a sudden expense</p>
+    <div class="row" style="margin-bottom:0;">
+      <input type="text" id="sudden-note" placeholder="e.g. Bought food">
+      <input type="number" id="sudden-amount" placeholder="Amount" class="field-wide" style="width:140px;">
+      <button id="sudden-add">Log expense</button>
+    </div>
+  </div>
+
+  <div class="row" style="margin-bottom:10px;">
+    <input type="number" id="savings-amount" placeholder="Amount (+ adds, - withdraws)" class="field-wide" style="width:180px;">
+    <input type="text" id="savings-note" placeholder="Note (optional)">
+    <button id="savings-add">Record</button>
+    <button id="savings-quickadd" title="Prefill with what's left unspent across your variable expense budgets">Use variable expense leftover</button>
+    <button id="savingsplan-quickadd" title="Prefill with this month's total fixed savings and investment contributions">Add fixed savings for this month</button>
+  </div>
+  <div id="savings-log"></div>
+
+  <div class="divider"></div>
+
+  <div class="section-label"><span>Export</span></div>
+  <p style="font-size:13px; color:var(--text-secondary); margin:0 0 10px;">Download everything below as a structured XML file \u2014 hand it to an AI agent (or paste its contents into a chat) to get help spotting problems or planning next steps.</p>
+  <button id="export-xml">Export for AI analysis (.xml)</button>
+
+  <p class="save-note">Your numbers are saved on this device. <button class="reset-link" id="reset-all">Reset to defaults</button></p>
+</div>
+
+<script>
+let payouts = [
+  {id: 0, day: 12, amount: 15000},
+  {id: 1, day: 27, amount: 15000}
+];
+let extra = 1000;
+let extraPayoutId = 0;
+let expId = 0, debtId = 0;
+let expenses = [
+  {id: expId++, name: 'Rent', amount: 12000, day: 12, payoutId: 0},
+  {id: expId++, name: 'Car payment', amount: 4500, day: 27, payoutId: 1},
+  {id: expId++, name: 'Electricity and water', amount: 2500, day: 27, payoutId: 1},
+  {id: expId++, name: 'Phone and internet', amount: 1800, day: 12, payoutId: 0}
+];
+let debts = [
+  {id: debtId++, name: 'Credit card', balance: 25000, payment: 1500, day: 12, payoutId: 0, overdue: 0},
+  {id: debtId++, name: 'Appliance loan', balance: 8000, payment: 800, day: 27, payoutId: 1, overdue: 1600},
+  {id: debtId++, name: 'Personal loan', balance: 60000, payment: 3200, day: 12, payoutId: 0, overdue: 0}
+];
+let varId = 0;
+let variableExpenses = [
+  {id: varId++, category: 'Food', budget: 4500, spent: 3800, payoutId: 0},
+  {id: varId++, category: 'Transportation', budget: 1500, spent: 1500, payoutId: 0},
+  {id: varId++, category: 'Personal and miscellaneous', budget: 1000, spent: 400, payoutId: 1}
+];
+let savingsBalance = 0;
+let savingsLogId = 0;
+let savingsLog = [];
+let savingsPlanId = 0;
+let savingsPlans = [
+  {id: savingsPlanId++, name: 'Emergency fund', amount: 1000, day: 12, payoutId: 0},
+  {id: savingsPlanId++, name: 'Stock investment', amount: 500, day: 27, payoutId: 1}
+];
+
+const fmt = n => {
+  const num = Number(n||0);
+  const sign = num < 0 ? '-' : '';
+  return sign + '\u20B1' + Math.abs(num).toLocaleString('en-PH', {maximumFractionDigits: 0});
+};
+
+let saveTimer = null;
+function saveState(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    try{
+      localStorage.setItem('budget-debt-state-v2', JSON.stringify({payouts, extra, extraPayoutId, expenses, debts, variableExpenses, savingsBalance, savingsLog, savingsPlans}));
+    }catch(err){ console.error('Save failed', err); }
+  }, 400);
+}
+
+async function loadState(){
+  try{
+    const raw = localStorage.getItem('budget-debt-state-v2');
+    if(raw){
+      const data = JSON.parse(raw);
+      payouts = (data.payouts && data.payouts.length) ? data.payouts : payouts;
+      extra = data.extra ?? extra;
+      extraPayoutId = data.extraPayoutId ?? extraPayoutId;
+      expenses = (data.expenses && data.expenses.length) ? data.expenses : expenses;
+      debts = (data.debts && data.debts.length) ? data.debts : debts;
+      variableExpenses = (data.variableExpenses && data.variableExpenses.length) ? data.variableExpenses : variableExpenses;
+      savingsBalance = data.savingsBalance ?? savingsBalance;
+      savingsLog = data.savingsLog && data.savingsLog.length ? data.savingsLog : savingsLog;
+      savingsPlans = (data.savingsPlans && data.savingsPlans.length) ? data.savingsPlans : savingsPlans;
+      expId = Math.max(0, ...expenses.map(e=>e.id)) + 1;
+      debtId = Math.max(0, ...debts.map(d=>d.id)) + 1;
+      varId = Math.max(0, ...variableExpenses.map(v=>v.id)) + 1;
+      savingsLogId = savingsLog.length ? Math.max(0, ...savingsLog.map(s=>s.id)) + 1 : 0;
+      savingsPlanId = Math.max(0, ...savingsPlans.map(s=>s.id)) + 1;
+    }
+  }catch(err){
+    // no saved state yet, use defaults
+  }
+}
+
+function payoutOptions(selectedId){
+  return payouts.map(p=>`<option value="${p.id}" ${p.id===selectedId?'selected':''}>Day ${p.day} (${fmt(p.amount)})</option>`).join('');
+}
+
+function payoutLabel(id){
+  const p = payouts.find(x=>x.id===id);
+  return p ? `Day ${p.day}` : '\u2014';
+}
+
+// Structural renders: rebuild a whole list. Only called on init, add, remove, or when
+// the number/shape of rows changes -- never on a plain keystroke in an existing field.
+
+function renderPayouts(){
+  document.getElementById('payout-list').innerHTML = payouts.map(p=>`
+    <div class="card payout-card">
+      <p class="label">Payout on day
+        <input type="number" min="1" max="31" value="${p.day}" data-payout-field="day" data-payout-id="${p.id}" style="width:50px; height:24px; padding:2px 6px; font-size:12px; margin-left:4px;">
+      </p>
+      <p class="value">
+        <input type="number" value="${p.amount}" step="500" data-payout-field="amount" data-payout-id="${p.id}" style="width:120px; height:32px; padding:4px 8px; font-size:18px; font-weight:600;">
+      </p>
+    </div>
+  `).join('');
+  document.querySelectorAll('[data-payout-field]').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const p = payouts.find(x=>x.id===Number(inp.dataset.payoutId));
+      p[inp.dataset.payoutField] = Number(inp.value)||0;
+      updatePayoutOptionLabels();
+      renderDerived();
+      saveState();
+    });
+  });
+}
+
+function renderExpenses(){
+  const list = document.getElementById('expense-list');
+  list.innerHTML = '';
+  expenses.forEach(e=>{
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `
+      <input type="text" value="${e.name}" data-field="name">
+      <input type="number" value="${e.amount}" data-field="amount" class="field-wide" title="Amount">
+      <input type="number" value="${e.day}" min="1" max="31" data-field="day" class="field" title="Due day">
+      <select data-field="payoutId" class="payout-select" title="Paid from">${payoutOptions(e.payoutId)}</select>
+      <button class="icon-btn" data-remove aria-label="Remove ${e.name}">&times;</button>
+    `;
+    row.querySelectorAll('input, select').forEach(inp=>{
+      inp.addEventListener('input', ()=>{
+        const field = inp.dataset.field;
+        e[field] = (field==='name') ? inp.value : Number(inp.value);
+        renderDerived();
+        saveState();
+      });
+    });
+    row.querySelector('[data-remove]').addEventListener('click', ()=>{
+      expenses = expenses.filter(x=>x.id!==e.id);
+      renderExpenses();
+      renderDerived();
+      saveState();
+    });
+    list.appendChild(row);
+  });
+}
+
+function renderDebts(){
+  const list = document.getElementById('debt-list');
+  list.innerHTML = '';
+  debts.forEach(d=>{
+    const wrap = document.createElement('div');
+    wrap.style.marginBottom = '10px';
+
+    const badge = document.createElement('div');
+    badge.style.cssText = 'font-size:11px; font-weight:600; color:var(--danger); background:var(--danger-bg); display:inline-block; padding:2px 8px; border-radius:6px; margin-bottom:4px; margin-right:6px;';
+    function syncBadge(){
+      const overdueAmt = Number(d.overdue||0);
+      if(overdueAmt > 0){
+        badge.textContent = `Overdue \u2014 ${fmt(overdueAmt)} past due`;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+    syncBadge();
+
+    const paymentsLeftEl = document.createElement('span');
+    paymentsLeftEl.style.cssText = 'font-size:11px; font-weight:600; color:var(--text-secondary); background:var(--surface-2); display:inline-block; padding:2px 8px; border-radius:6px; margin-bottom:4px;';
+    function syncPaymentsLeft(){
+      const bal = Number(d.balance||0), pay = Number(d.payment||0);
+      if(pay <= 0 || bal <= 0){
+        paymentsLeftEl.textContent = bal<=0 ? 'Paid off' : 'Set a payment amount';
+      } else {
+        paymentsLeftEl.textContent = `${Math.ceil(bal/pay)} payments left`;
+      }
+    }
+    syncPaymentsLeft();
+
+    const badgeRow = document.createElement('div');
+    badgeRow.appendChild(badge);
+    badgeRow.appendChild(paymentsLeftEl);
+    wrap.appendChild(badgeRow);
+
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `
+      <input type="text" value="${d.name}" data-field="name">
+      <input type="number" value="${d.balance}" data-field="balance" class="field-wide" title="Remaining balance">
+      <input type="number" value="${d.payment}" data-field="payment" class="field-wide" title="Fixed monthly payment">
+      <input type="number" value="${d.day}" min="1" max="31" data-field="day" class="field" title="Due day">
+      <input type="number" value="${d.overdue||0}" data-field="overdue" class="field-wide" title="Amount currently overdue">
+      <select data-field="payoutId" class="payout-select" title="Paid from">${payoutOptions(d.payoutId)}</select>
+      <button class="icon-btn" data-remove aria-label="Remove ${d.name}">&times;</button>
+    `;
+    const overdueInput = row.querySelector('[data-field="overdue"]');
+    row.querySelectorAll('input, select').forEach(inp=>{
+      inp.addEventListener('input', ()=>{
+        const field = inp.dataset.field;
+        d[field] = (field==='name') ? inp.value : Number(inp.value);
+        if(field==='overdue'){
+          syncBadge();
+          overdueInput.style.borderColor = Number(d.overdue||0)>0 ? 'var(--danger)' : '';
+          overdueInput.style.color = Number(d.overdue||0)>0 ? 'var(--danger)' : '';
+        }
+        if(field==='balance' || field==='payment'){
+          syncPaymentsLeft();
+        }
+        renderDerived();
+        saveState();
+      });
+    });
+    if(Number(d.overdue||0)>0){
+      overdueInput.style.borderColor = 'var(--danger)';
+      overdueInput.style.color = 'var(--danger)';
+    }
+    row.querySelector('[data-remove]').addEventListener('click', ()=>{
+      debts = debts.filter(x=>x.id!==d.id);
+      renderDebts();
+      renderDerived();
+      saveState();
+    });
+    wrap.appendChild(row);
+    list.appendChild(wrap);
+  });
+}
+
+function renderVariableExpenses(){
+  const list = document.getElementById('variable-list');
+  list.innerHTML = '';
+  variableExpenses.forEach(v=>{
+    const wrap = document.createElement('div');
+    wrap.style.marginBottom = '10px';
+
+    const leftoverEl = document.createElement('span');
+    leftoverEl.style.cssText = 'font-size:11px; font-weight:600; display:inline-block; padding:2px 8px; border-radius:6px; margin-bottom:4px;';
+    function syncLeftover(){
+      const diff = Number(v.budget||0) - Number(v.spent||0);
+      if(diff >= 0){
+        leftoverEl.textContent = `${fmt(diff)} left`;
+        leftoverEl.style.color = 'var(--accent-text)';
+        leftoverEl.style.background = 'var(--accent-bg)';
+      } else {
+        leftoverEl.textContent = `${fmt(Math.abs(diff))} over budget`;
+        leftoverEl.style.color = 'var(--danger)';
+        leftoverEl.style.background = 'var(--danger-bg)';
+      }
+    }
+    syncLeftover();
+    wrap.appendChild(leftoverEl);
+
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `
+      <input type="text" value="${v.category}" data-field="category">
+      <input type="number" value="${v.budget}" data-field="budget" class="field-wide" title="Monthly budget cap">
+      <input type="number" value="${v.spent||0}" data-field="spent" class="field-wide" title="Actual amount spent so far">
+      <select data-field="payoutId" class="payout-select" title="Funded from">${payoutOptions(v.payoutId)}</select>
+      <button class="icon-btn" data-remove aria-label="Remove ${v.category}">&times;</button>
+    `;
+    row.querySelectorAll('input, select').forEach(inp=>{
+      inp.addEventListener('input', ()=>{
+        const field = inp.dataset.field;
+        v[field] = (field==='category') ? inp.value : Number(inp.value);
+        if(field==='budget' || field==='spent') syncLeftover();
+        renderDerived();
+        saveState();
+      });
+    });
+    row.querySelector('[data-remove]').addEventListener('click', ()=>{
+      variableExpenses = variableExpenses.filter(x=>x.id!==v.id);
+      renderVariableExpenses();
+      renderDerived();
+      saveState();
+    });
+    wrap.appendChild(row);
+    list.appendChild(wrap);
+  });
+}
+
+function updatePayoutOptionLabels(){
+  document.querySelectorAll('select[data-field="payoutId"], #extra-payout-select').forEach(sel=>{
+    Array.from(sel.options).forEach(opt=>{
+      const p = payouts.find(x=>x.id===Number(opt.value));
+      if(p) opt.textContent = `Day ${p.day} (${fmt(p.amount)})`;
+    });
+  });
+}
+
+// Derived renders: read-only summaries. Safe to rebuild on every keystroke since
+// nothing here is directly typed into.
+
+function renderSummaryCards(){
+  const totalIncome = payouts.reduce((s,p)=>s+Number(p.amount||0),0);
+  const totalExp = expenses.reduce((s,e)=>s+Number(e.amount||0),0);
+  const totalVar = variableExpenses.reduce((s,v)=>s+Number(v.budget||0),0);
+  const totalOverdue = debts.reduce((s,d)=>s+Number(d.overdue||0),0);
+  const totalSavePlan = savingsPlanMonthlyTotal();
+  const varDiff = variableExpenseLeftover();
+  const left = totalIncome - totalExp - totalVar - totalSavePlan;
+  document.getElementById('summary-cards').innerHTML = `
+    <div class="card"><p class="label">Total income</p><p class="value">${fmt(totalIncome)}</p></div>
+    <div class="card"><p class="label">Fixed expenses</p><p class="value">${fmt(totalExp)}</p></div>
+    <div class="card"><p class="label">Variable budget</p><p class="value">${fmt(totalVar)}</p></div>
+    <div class="card"><p class="label">Fixed savings</p><p class="value">${fmt(totalSavePlan)}</p></div>
+    <div class="card"><p class="label">Uncommitted</p><p class="value" style="color:${left<0?'var(--danger)':'var(--text-primary)'}">${fmt(left)}</p></div>
+    ${totalOverdue>0 ? `<div class="card" style="border-left:3px solid var(--danger);"><p class="label" style="color:var(--danger);">Overdue debts</p><p class="value" style="color:var(--danger);">${fmt(totalOverdue)}</p></div>` : ''}
+    ${varDiff<0 ? `<div class="card" style="border-left:3px solid var(--danger);"><p class="label" style="color:var(--danger);">Overspent (variable)</p><p class="value" style="color:var(--danger);">${fmt(Math.abs(varDiff))}</p></div>` : ''}
+  `;
+}
+
+let calYear, calMonth, highlightDay = null;
+
+function renderCalendar(){
+  const year = calYear, month = calMonth;
+  const monthName = new Date(year, month, 1).toLocaleString(undefined,{month:'long', year:'numeric'});
+  const firstDow = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+
+  const byDay = {};
+  expenses.forEach(e=>{
+    const d = Math.min(Math.max(Number(e.day)||1,1), daysInMonth);
+    if(!byDay[d]) byDay[d]=[];
+    byDay[d].push(e);
+  });
+  const debtByDay = {};
+  debts.forEach(x=>{
+    const d = Math.min(Math.max(Number(x.day)||1,1), daysInMonth);
+    debtByDay[d] = (debtByDay[d]||0) + Number(x.payment||0);
+  });
+  const saveByDay = {};
+  savingsPlans.forEach(sp=>{
+    const d = Math.min(Math.max(Number(sp.day)||1,1), daysInMonth);
+    saveByDay[d] = (saveByDay[d]||0) + Number(sp.amount||0);
+  });
+  const payoutByDay = {};
+  payouts.forEach(p=>{
+    const d = Math.min(Math.max(Number(p.day)||1,1), daysInMonth);
+    payoutByDay[d] = (payoutByDay[d]||0) + Number(p.amount||0);
+  });
+
+  let cells = '';
+  for(let i=0;i<firstDow;i++) cells += `<div></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const dayExp = byDay[d] || [];
+    const total = dayExp.reduce((s,e)=>s+Number(e.amount||0),0);
+    const debtTotal = debtByDay[d] || 0;
+    const saveTotal = saveByDay[d] || 0;
+    const isPayout = payoutByDay[d] !== undefined;
+    const isSearched = highlightDay===d;
+    const cls = ['cal-cell'];
+    if(dayExp.length) cls.push('has-exp');
+    if(isPayout) cls.push('is-payout');
+    if(isSearched) cls.push('is-searched');
+    cells += `<div class="${cls.join(' ')}">
+      <div class="cal-day">${d}</div>
+      ${isPayout ? `<div class="cal-payout">+${fmt(payoutByDay[d])}</div>` : ''}
+      ${dayExp.length ? `<div class="cal-amt">-${fmt(total)}</div>` : ''}
+      ${debtTotal ? `<div class="cal-amt" style="color:var(--danger);">-${fmt(debtTotal)}</div>` : ''}
+      ${saveTotal ? `<div class="cal-amt" style="color:var(--income-text);">-${fmt(saveTotal)}</div>` : ''}
+    </div>`;
+  }
+
+  let dayDetail = '';
+  if(highlightDay!==null){
+    const d = highlightDay;
+    const dayExp = byDay[d] || [];
+    const dayDebts = debts.filter(x=>Math.min(Math.max(Number(x.day)||1,1), daysInMonth)===d);
+    const daySavePlans = savingsPlans.filter(sp=>Math.min(Math.max(Number(sp.day)||1,1), daysInMonth)===d);
+    const dayPayouts = payouts.filter(p=>Math.min(Math.max(Number(p.day)||1,1), daysInMonth)===d);
+    const items = [
+      ...dayPayouts.map(p=>`<div class="meta">+${fmt(p.amount)} payout</div>`),
+      ...dayExp.map(e=>`<div class="meta">-${fmt(e.amount)} ${e.name}</div>`),
+      ...dayDebts.map(x=>`<div class="meta" style="color:var(--danger);">-${fmt(x.payment)} ${x.name} (debt payment)</div>`),
+      ...daySavePlans.map(sp=>`<div class="meta" style="color:var(--income-text);">-${fmt(sp.amount)} ${sp.name} (savings)</div>`)
+    ];
+    dayDetail = `<div class="card" style="margin-top:10px;">
+      <p class="label">${monthName.split(' ')[0]} ${d}, ${year}</p>
+      ${items.length ? items.join('') : '<div class="meta">Nothing scheduled this day.</div>'}
+    </div>`;
+  }
+
+  document.getElementById('calendar-wrap').innerHTML = `
+    <p style="font-size:14px; font-weight:600; margin:0 0 10px;">${monthName}</p>
+    <div class="cal-head">${['S','M','T','W','T','F','S'].map(d=>`<div>${d}</div>`).join('')}</div>
+    <div class="cal-grid">${cells}</div>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--income);"></span>Payout day</span>
+      <span><span class="dot" style="background:var(--accent);"></span>Expense due</span>
+      <span><span class="dot" style="background:var(--danger);"></span>Debt payment due</span>
+      <span><span class="dot" style="background:var(--income-text);"></span>Savings contribution</span>
+    </div>
+    ${dayDetail}
+  `;
+}
+
+function simulateSnowball(inputDebts, extraPayment){
+  const d = inputDebts.map(x=>({...x}));
+  d.sort((a,b)=>{
+    const aOver = Number(a.overdue||0) > 0 ? 1 : 0;
+    const bOver = Number(b.overdue||0) > 0 ? 1 : 0;
+    if(aOver !== bOver) return bOver - aOver;
+    return a.balance - b.balance;
+  });
+  const order = d.map(x=>x.id);
+  let paidOff = new Set();
+  const payoffMonth = {};
+  let month = 0;
+  let active = d.filter(x=>x.balance>0);
+  while(active.length>0 && month<600){
+    month++;
+    active.forEach(x=>{
+      const pay = Math.min(x.payment||0, x.balance);
+      x.balance -= pay;
+    });
+    const freedPayments = d.filter(x=>paidOff.has(x.id)).reduce((s,x)=>s+(x.payment||0),0);
+    let pool = extraPayment + freedPayments;
+    for(const x of active){
+      if(x.balance<=0 || pool<=0) continue;
+      const pay = Math.min(pool, x.balance);
+      x.balance -= pay;
+      pool -= pay;
+    }
+    active.forEach(x=>{
+      if(x.balance<=0.5 && !paidOff.has(x.id)){
+        paidOff.add(x.id);
+        payoffMonth[x.id] = month;
+      }
+    });
+    active = active.filter(x=>x.balance>0.5);
+  }
+  return {months: month, payoffMonth, order};
+}
+
+function renderPayoff(){
+  if(debts.length===0){
+    document.getElementById('payoff-summary').innerHTML = '';
+    document.getElementById('payoff-order').innerHTML = `<p style="font-size:14px; color:var(--text-secondary);">No debts added.</p>`;
+    return;
+  }
+  const result = simulateSnowball(debts, extra);
+  const totalBalance = debts.reduce((s,x)=>s+Number(x.balance||0),0);
+  const totalMonthlyPayments = debts.reduce((s,x)=>s+Number(x.payment||0),0);
+
+  document.getElementById('payoff-summary').innerHTML = `
+    <div class="card"><p class="label">Total debt</p><p class="value">${fmt(totalBalance)}</p></div>
+    <div class="card"><p class="label">Debt-free in</p><p class="value">${result.months} mo</p></div>
+    <div class="card"><p class="label">Fixed payments/mo</p><p class="value">${fmt(totalMonthlyPayments)}</p></div>
+  `;
+
+  const byId = Object.fromEntries(debts.map(d=>[d.id,d]));
+  const rows = result.order.map((id,i)=>{
+    const d = byId[id];
+    const overdueTag = Number(d.overdue||0)>0 ? `<span style="color:var(--danger); font-weight:600;">${fmt(d.overdue)} overdue \u2022 </span>` : '';
+    return `<div class="debt-row">
+      <div><span class="meta" style="margin-right:8px;">${i+1}.</span><span class="name">${d.name}</span></div>
+      <div class="meta">${overdueTag}${fmt(d.balance)} \u2022 ${fmt(d.payment)}/mo from ${payoutLabel(d.payoutId)} &bull; paid off month ${result.payoffMonth[id] || '\u2014'}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('payoff-order').innerHTML = rows;
+}
+
+function renderPayoutBreakdown(){
+  const html = payouts.map(p=>{
+    const expTotal = expenses.filter(e=>e.payoutId===p.id).reduce((s,e)=>s+Number(e.amount||0),0);
+    const varTotal = variableExpenses.filter(v=>v.payoutId===p.id).reduce((s,v)=>s+Number(v.budget||0),0);
+    const minTotal = debts.filter(d=>d.payoutId===p.id).reduce((s,d)=>s+Number(d.payment||0),0);
+    const overdueTotal = debts.filter(d=>d.payoutId===p.id).reduce((s,d)=>s+Number(d.overdue||0),0);
+    const savePlanTotal = savingsPlans.filter(sp=>sp.payoutId===p.id).reduce((s,sp)=>s+Number(sp.amount||0),0);
+    const extraHere = extraPayoutId===p.id ? Number(extra||0) : 0;
+    const outflow = expTotal + varTotal + minTotal + extraHere + overdueTotal + savePlanTotal;
+    const left = Number(p.amount||0) - outflow;
+    return `<div class="card payout-card">
+      <p class="label">Day ${p.day} payout</p>
+      <p class="value">${fmt(p.amount)}</p>
+      <p class="sub">Fixed ${fmt(expTotal)} &bull; variable ${fmt(varTotal)} &bull; debt payments ${fmt(minTotal)}${extraHere?` &bull; extra ${fmt(extraHere)}`:''}${savePlanTotal?` &bull; savings ${fmt(savePlanTotal)}`:''}${overdueTotal?` &bull; <span style="color:var(--danger); font-weight:600;">overdue catch-up ${fmt(overdueTotal)}</span>`:''}</p>
+      <p class="sub" style="color:${left<0?'var(--danger)':'var(--accent-text)'}; font-weight:600;">Left over: ${fmt(left)}</p>
+    </div>`;
+  }).join('');
+  document.getElementById('payout-breakdown').innerHTML = html;
+}
+
+function renderSavingsPlans(){
+  const list = document.getElementById('savingsplan-list');
+  list.innerHTML = '';
+  savingsPlans.forEach(sp=>{
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `
+      <input type="text" value="${sp.name}" data-field="name">
+      <input type="number" value="${sp.amount}" data-field="amount" class="field-wide" title="Monthly contribution">
+      <input type="number" value="${sp.day}" min="1" max="31" data-field="day" class="field" title="Contribution day">
+      <select data-field="payoutId" class="payout-select" title="Funded from">${payoutOptions(sp.payoutId)}</select>
+      <button class="icon-btn" data-remove aria-label="Remove ${sp.name}">&times;</button>
+    `;
+    row.querySelectorAll('input, select').forEach(inp=>{
+      inp.addEventListener('input', ()=>{
+        const field = inp.dataset.field;
+        sp[field] = (field==='name') ? inp.value : Number(inp.value);
+        renderDerived();
+        saveState();
+      });
+    });
+    row.querySelector('[data-remove]').addEventListener('click', ()=>{
+      savingsPlans = savingsPlans.filter(x=>x.id!==sp.id);
+      renderSavingsPlans();
+      renderDerived();
+      saveState();
+    });
+    list.appendChild(row);
+  });
+}
+
+function savingsPlanMonthlyTotal(){
+  return savingsPlans.reduce((s,sp)=>s+Number(sp.amount||0), 0);
+}
+
+
+function variableExpenseLeftover(){
+  return variableExpenses.reduce((s,v)=>s + (Number(v.budget||0) - Number(v.spent||0)), 0);
+}
+
+function renderSavingsSummary(){
+  document.getElementById('savings-summary').innerHTML = `
+    <div class="card payout-card"><p class="label">Savings balance</p><p class="value" style="color:${savingsBalance<0?'var(--danger)':'var(--text-primary)'}">${fmt(savingsBalance)}</p></div>
+  `;
+}
+
+function renderSavingsLog(){
+  const list = document.getElementById('savings-log');
+  if(savingsLog.length===0){
+    list.innerHTML = `<p style="font-size:13px; color:var(--text-secondary);">No entries yet \u2014 record a top-up whenever a bill comes in lower than planned.</p>`;
+    return;
+  }
+  const rows = savingsLog.slice().reverse().slice(0,15).map(entry=>{
+    const isAdd = entry.amount >= 0;
+    const sign = isAdd ? '+' : '\u2212';
+    const color = isAdd ? 'var(--accent-text)' : 'var(--danger)';
+    return `<div class="debt-row">
+      <div class="name">${entry.note || (isAdd ? 'Added' : 'Withdrawn')}</div>
+      <div class="meta" style="color:${color}; font-weight:600;">${sign}${fmt(Math.abs(entry.amount))} &bull; <span style="font-weight:400; color:var(--text-secondary);">${entry.date}</span></div>
+    </div>`;
+  }).join('');
+  list.innerHTML = rows;
+}
+
+function recordSavingsEntry(amount, note){
+  if(!amount) return;
+  savingsBalance += amount;
+  savingsLog.push({
+    id: savingsLogId++,
+    amount,
+    note,
+    date: new Date().toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'})
+  });
+  renderSavingsSummary();
+  renderSavingsLog();
+  saveState();
+}
+
+function renderDerived(){
+  renderSummaryCards();
+  renderCalendar();
+  renderPayoff();
+  renderPayoutBreakdown();
+  renderSavingsSummary();
+}
+
+document.getElementById('savings-add').addEventListener('click', ()=>{
+  const amtInput = document.getElementById('savings-amount');
+  const noteInput = document.getElementById('savings-note');
+  const amt = Number(amtInput.value);
+  if(!amt) return;
+  recordSavingsEntry(amt, noteInput.value.trim());
+  amtInput.value = '';
+  noteInput.value = '';
+});
+document.getElementById('savings-quickadd').addEventListener('click', ()=>{
+  const amtInput = document.getElementById('savings-amount');
+  const noteInput = document.getElementById('savings-note');
+  const diff = variableExpenseLeftover();
+  amtInput.value = diff;
+  noteInput.value = diff < 0 ? 'Overspent on variable expenses' : 'Leftover from variable expenses';
+});
+document.getElementById('savingsplan-quickadd').addEventListener('click', ()=>{
+  const amtInput = document.getElementById('savings-amount');
+  const noteInput = document.getElementById('savings-note');
+  amtInput.value = savingsPlanMonthlyTotal();
+  noteInput.value = 'Fixed savings and investment contribution';
+});
+document.getElementById('sudden-add').addEventListener('click', ()=>{
+  const noteInput = document.getElementById('sudden-note');
+  const amtInput = document.getElementById('sudden-amount');
+  const amt = Number(amtInput.value);
+  if(!amt) return;
+  const note = noteInput.value.trim() || 'Sudden expense';
+  recordSavingsEntry(-Math.abs(amt), note);
+  noteInput.value = '';
+  amtInput.value = '';
+});
+
+document.getElementById('extra-input').addEventListener('input', e=>{
+  extra = Number(e.target.value)||0;
+  renderDerived();
+  saveState();
+});
+
+document.getElementById('add-expense').addEventListener('click', ()=>{
+  expenses.push({id: expId++, name: 'New expense', amount: 0, day: payouts[0].day, payoutId: payouts[0].id});
+  renderExpenses();
+  renderDerived();
+  saveState();
+});
+document.getElementById('add-debt').addEventListener('click', ()=>{
+  debts.push({id: debtId++, name: 'New debt', balance: 0, payment: 0, day: payouts[0].day, payoutId: payouts[0].id, overdue: 0});
+  renderDebts();
+  renderDerived();
+  saveState();
+});
+document.getElementById('add-variable').addEventListener('click', ()=>{
+  variableExpenses.push({id: varId++, category: 'New category', budget: 0, spent: 0, payoutId: payouts[0].id});
+  renderVariableExpenses();
+  renderDerived();
+  saveState();
+});
+document.getElementById('add-savingsplan').addEventListener('click', ()=>{
+  savingsPlans.push({id: savingsPlanId++, name: 'New contribution', amount: 0, day: payouts[0].day, payoutId: payouts[0].id});
+  renderSavingsPlans();
+  renderDerived();
+  saveState();
+});
+document.getElementById('reset-all').addEventListener('click', ()=>{
+  if(!confirm('Reset all data to the starting example values?')) return;
+  payouts = [{id: 0, day: 12, amount: 15000}, {id: 1, day: 27, amount: 15000}];
+  extra = 1000; extraPayoutId = 0; expId = 0; debtId = 0;
+  expenses = [
+    {id: expId++, name: 'Rent', amount: 12000, day: 12, payoutId: 0},
+    {id: expId++, name: 'Car payment', amount: 4500, day: 27, payoutId: 1},
+    {id: expId++, name: 'Electricity and water', amount: 2500, day: 27, payoutId: 1},
+    {id: expId++, name: 'Phone and internet', amount: 1800, day: 12, payoutId: 0}
+  ];
+  debts = [
+    {id: debtId++, name: 'Credit card', balance: 25000, payment: 1500, day: 12, payoutId: 0, overdue: 0},
+    {id: debtId++, name: 'Appliance loan', balance: 8000, payment: 800, day: 27, payoutId: 1, overdue: 1600},
+    {id: debtId++, name: 'Personal loan', balance: 60000, payment: 3200, day: 12, payoutId: 0, overdue: 0}
+  ];
+  varId = 0;
+  variableExpenses = [
+    {id: varId++, category: 'Food', budget: 4500, spent: 3800, payoutId: 0},
+    {id: varId++, category: 'Transportation', budget: 1500, spent: 1500, payoutId: 0},
+    {id: varId++, category: 'Personal and miscellaneous', budget: 1000, spent: 400, payoutId: 1}
+  ];
+  savingsBalance = 0; savingsLog = []; savingsLogId = 0;
+  savingsPlanId = 0;
+  savingsPlans = [
+    {id: savingsPlanId++, name: 'Emergency fund', amount: 1000, day: 12, payoutId: 0},
+    {id: savingsPlanId++, name: 'Stock investment', amount: 500, day: 27, payoutId: 1}
+  ];
+  renderAll();
+  saveState();
+});
+
+function initExtraPayoutSelect(){
+  const sel = document.getElementById('extra-payout-select');
+  sel.innerHTML = payoutOptions(extraPayoutId);
+  sel.addEventListener('change', e=>{
+    extraPayoutId = Number(e.target.value);
+    renderDerived();
+    saveState();
+  });
+}
+
+function goToMonth(y, m){
+  let year = y, month = m;
+  while(month < 0){ month += 12; year -= 1; }
+  while(month > 11){ month -= 12; year += 1; }
+  calYear = year; calMonth = month;
+  renderCalendar();
+}
+
+document.getElementById('cal-prev').addEventListener('click', ()=>{
+  highlightDay = null;
+  goToMonth(calYear, calMonth-1);
+});
+document.getElementById('cal-next').addEventListener('click', ()=>{
+  highlightDay = null;
+  goToMonth(calYear, calMonth+1);
+});
+document.getElementById('cal-today').addEventListener('click', ()=>{
+  const now = new Date();
+  highlightDay = null;
+  document.getElementById('date-search').value = '';
+  goToMonth(now.getFullYear(), now.getMonth());
+});
+document.getElementById('date-search').addEventListener('change', e=>{
+  if(!e.target.value) return;
+  const parts = e.target.value.split('-');
+  const y = Number(parts[0]), m = Number(parts[1])-1, dd = Number(parts[2]);
+  highlightDay = dd;
+  goToMonth(y, m);
+});
+document.getElementById('date-search-clear').addEventListener('click', ()=>{
+  highlightDay = null;
+  document.getElementById('date-search').value = '';
+  renderCalendar();
+});
+
+function escapeXml(str){
+  return String(str==null?'':str).replace(/[<>&'"]/g, c => ({
+    '<':'&lt;', '>':'&gt;', '&':'&amp;', "'":'&apos;', '"':'&quot;'
+  }[c]));
+}
+
+function buildExportXml(){
+  const totalIncome = payouts.reduce((s,p)=>s+Number(p.amount||0),0);
+  const totalExp = expenses.reduce((s,e)=>s+Number(e.amount||0),0);
+  const totalVarBudget = variableExpenses.reduce((s,v)=>s+Number(v.budget||0),0);
+  const totalVarSpent = variableExpenses.reduce((s,v)=>s+Number(v.spent||0),0);
+  const varDiff = variableExpenseLeftover();
+  const totalSavePlan = savingsPlanMonthlyTotal();
+  const totalOverdue = debts.reduce((s,d)=>s+Number(d.overdue||0),0);
+  const totalDebtBalance = debts.reduce((s,d)=>s+Number(d.balance||0),0);
+  const totalDebtPayments = debts.reduce((s,d)=>s+Number(d.payment||0),0);
+  const uncommitted = totalIncome - totalExp - totalVarBudget - totalSavePlan;
+  const snowball = debts.length ? simulateSnowball(debts, extra) : {months:0, payoffMonth:{}, order:[]};
+  const byId = Object.fromEntries(debts.map(d=>[d.id,d]));
+
+  const payoutsXml = payouts.map(p=>
+    `    <payout day="${p.day}" amount="${Number(p.amount||0)}"/>`
+  ).join('\n');
+
+  const expensesXml = expenses.map(e=>
+    `    <expense name="${escapeXml(e.name)}" amount="${Number(e.amount||0)}" dueDay="${e.day}" paidFromPayoutDay="${payoutLabel(e.payoutId).replace('Day ','')}"/>`
+  ).join('\n');
+
+  const variableXml = variableExpenses.map(v=>{
+    const diff = Number(v.budget||0) - Number(v.spent||0);
+    return `    <category name="${escapeXml(v.category)}" budget="${Number(v.budget||0)}" spentSoFar="${Number(v.spent||0)}" remaining="${diff}" status="${diff<0?'over_budget':'within_budget'}" fundedFromPayoutDay="${payoutLabel(v.payoutId).replace('Day ','')}"/>`;
+  }).join('\n');
+
+  const debtsXml = snowball.order.map((id,i)=>{
+    const d = byId[id];
+    const paymentsLeft = (d.payment>0 && d.balance>0) ? Math.ceil(d.balance/d.payment) : 0;
+    return `    <debt name="${escapeXml(d.name)}" balance="${Number(d.balance||0)}" fixedMonthlyPayment="${Number(d.payment||0)}" dueDay="${d.day}" overdueAmount="${Number(d.overdue||0)}" isOverdue="${Number(d.overdue||0)>0}" estimatedPaymentsLeftAtCurrentPace="${paymentsLeft}" snowballPriority="${i+1}" snowballPayoffMonth="${snowball.payoffMonth[id]||''}" paidFromPayoutDay="${payoutLabel(d.payoutId).replace('Day ','')}"/>`;
+  }).join('\n');
+
+  const savingsPlansXml = savingsPlans.map(sp=>
+    `    <contribution name="${escapeXml(sp.name)}" monthlyAmount="${Number(sp.amount||0)}" day="${sp.day}" fundedFromPayoutDay="${payoutLabel(sp.payoutId).replace('Day ','')}"/>`
+  ).join('\n');
+
+  const savingsLogXml = savingsLog.slice(-30).map(entry=>
+    `    <entry date="${escapeXml(entry.date)}" amount="${Number(entry.amount||0)}" note="${escapeXml(entry.note||'')}" type="${entry.amount>=0?'deposit':'withdrawal'}"/>`
+  ).join('\n');
+
+  const payoutBreakdownXml = payouts.map(p=>{
+    const expTotal = expenses.filter(e=>e.payoutId===p.id).reduce((s,e)=>s+Number(e.amount||0),0);
+    const varTotal = variableExpenses.filter(v=>v.payoutId===p.id).reduce((s,v)=>s+Number(v.budget||0),0);
+    const debtTotal = debts.filter(d=>d.payoutId===p.id).reduce((s,d)=>s+Number(d.payment||0),0);
+    const overdueTotal = debts.filter(d=>d.payoutId===p.id).reduce((s,d)=>s+Number(d.overdue||0),0);
+    const saveTotal = savingsPlans.filter(sp=>sp.payoutId===p.id).reduce((s,sp)=>s+Number(sp.amount||0),0);
+    const extraHere = extraPayoutId===p.id ? Number(extra||0) : 0;
+    const outflow = expTotal + varTotal + debtTotal + extraHere + overdueTotal + saveTotal;
+    const left = Number(p.amount||0) - outflow;
+    return `    <payout day="${p.day}" income="${Number(p.amount||0)}" fixedExpenses="${expTotal}" variableBudget="${varTotal}" debtPayments="${debtTotal}" savingsContributions="${saveTotal}" extraDebtPayment="${extraHere}" overdueCatchUp="${overdueTotal}" leftover="${left}" status="${left<0?'overcommitted':'ok'}"/>`;
+  }).join('\n');
+
+  const alerts = [];
+  if(totalOverdue>0) alerts.push(`    <alert type="overdue_debt" totalAmount="${totalOverdue}">One or more debts have a past-due amount that needs catching up.</alert>`);
+  if(varDiff<0) alerts.push(`    <alert type="overspent_variable_expenses" amount="${Math.abs(varDiff)}">Actual spending on variable expense categories exceeded the budgeted amount this month.</alert>`);
+  if(uncommitted<0) alerts.push(`    <alert type="negative_uncommitted_income" amount="${Math.abs(uncommitted)}">Fixed expenses, variable budgets, and fixed savings together exceed total income.</alert>`);
+  payouts.forEach(p=>{
+    const expTotal = expenses.filter(e=>e.payoutId===p.id).reduce((s,e)=>s+Number(e.amount||0),0);
+    const varTotal = variableExpenses.filter(v=>v.payoutId===p.id).reduce((s,v)=>s+Number(v.budget||0),0);
+    const debtTotal = debts.filter(d=>d.payoutId===p.id).reduce((s,d)=>s+Number(d.payment||0),0);
+    const overdueTotal = debts.filter(d=>d.payoutId===p.id).reduce((s,d)=>s+Number(d.overdue||0),0);
+    const saveTotal = savingsPlans.filter(sp=>sp.payoutId===p.id).reduce((s,sp)=>s+Number(sp.amount||0),0);
+    const extraHere = extraPayoutId===p.id ? Number(extra||0) : 0;
+    const left = Number(p.amount||0) - (expTotal + varTotal + debtTotal + extraHere + overdueTotal + saveTotal);
+    if(left<0) alerts.push(`    <alert type="payout_overcommitted" payoutDay="${p.day}" shortfall="${Math.abs(left)}">The day ${p.day} payout does not cover everything assigned to it.</alert>`);
+  });
+  if(savingsBalance<0) alerts.push(`    <alert type="negative_savings_balance" amount="${Math.abs(savingsBalance)}">The savings/leftover fund balance has gone negative.</alert>`);
+  const alertsXml = alerts.length ? alerts.join('\n') : '    <!-- No alerts detected -->';
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Personal budget and debt payoff export.
+  Generated by a budget calendar and debt payoff planner tool on ${new Date().toISOString()}.
+  Currency: Philippine peso (PHP).
+  Intended use: give this file to an AI agent or financial advisor to review for
+  risks (overcommitted payouts, overdue debts, overspending) and to suggest
+  strategies for fixing or improving the plan (e.g. debt payoff order, budget
+  rebalancing, savings rate). All monetary figures are plain numbers in PHP.
+-->
+<budgetPlan currency="PHP" generatedAt="${new Date().toISOString()}">
+
+  <summary>
+    <totalMonthlyIncome>${totalIncome}</totalMonthlyIncome>
+    <totalFixedExpenses>${totalExp}</totalFixedExpenses>
+    <totalVariableExpenseBudget>${totalVarBudget}</totalVariableExpenseBudget>
+    <totalVariableExpenseActualSpent>${totalVarSpent}</totalVariableExpenseActualSpent>
+    <variableExpenseLeftoverOrOverspend>${varDiff}</variableExpenseLeftoverOrOverspend>
+    <totalFixedSavingsAndInvestments>${totalSavePlan}</totalFixedSavingsAndInvestments>
+    <uncommittedIncome>${uncommitted}</uncommittedIncome>
+    <totalDebtBalance>${totalDebtBalance}</totalDebtBalance>
+    <totalMonthlyDebtPayments>${totalDebtPayments}</totalMonthlyDebtPayments>
+    <totalOverdueDebtAmount>${totalOverdue}</totalOverdueDebtAmount>
+    <extraMonthlyPaymentTowardDebt>${extra}</extraMonthlyPaymentTowardDebt>
+    <estimatedMonthsToDebtFree>${snowball.months}</estimatedMonthsToDebtFree>
+    <currentSavingsBalance>${savingsBalance}</currentSavingsBalance>
+  </summary>
+
+  <payouts note="Recurring paychecks, by day of month">
+${payoutsXml}
+  </payouts>
+
+  <fixedExpenses note="Recurring monthly bills at a fixed amount and due day">
+${expensesXml || '    <!-- none -->'}
+  </fixedExpenses>
+
+  <variableExpenses note="Monthly spending categories with a budget cap and actual amount spent so far">
+${variableXml || '    <!-- none -->'}
+  </variableExpenses>
+
+  <debts note="Ordered by snowball priority: overdue debts first, then smallest balance first. Each debt is a fixed installment, not interest-accruing.">
+${debtsXml || '    <!-- none -->'}
+  </debts>
+
+  <fixedSavingsAndInvestments note="Recurring monthly contributions, separate from ad-hoc savings entries">
+${savingsPlansXml || '    <!-- none -->'}
+  </fixedSavingsAndInvestments>
+
+  <savingsLog note="Most recent entries in the savings/leftover fund, positive = deposit, negative = withdrawal">
+${savingsLogXml || '    <!-- none -->'}
+  </savingsLog>
+
+  <payoutBreakdown note="What each individual payout is committed to, and what is left over">
+${payoutBreakdownXml}
+  </payoutBreakdown>
+
+  <alerts note="Automatically detected issues worth addressing">
+${alertsXml}
+  </alerts>
+
+</budgetPlan>
+`;
+}
+
+document.getElementById('export-xml').addEventListener('click', ()=>{
+  const xml = buildExportXml();
+  const blob = new Blob([xml], {type: 'application/xml'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const dateStr = new Date().toISOString().slice(0,10);
+  a.download = `budget-export-${dateStr}.xml`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+function renderAll(){
+  renderPayouts();
+  renderExpenses();
+  renderVariableExpenses();
+  renderDebts();
+  renderSavingsPlans();
+  document.getElementById('extra-input').value = extra;
+  const sel = document.getElementById('extra-payout-select');
+  sel.innerHTML = payoutOptions(extraPayoutId);
+  renderSavingsLog();
+  renderDerived();
+}
+
+(async function init(){
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+  await loadState();
+  renderAll();
+})();
+</script>
+</body>
+</html>
