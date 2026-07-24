@@ -48,14 +48,18 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     line-height:1.5;
   }
+  html, body{height:100%;}
   .wrap{max-width:1360px; margin:0 auto; padding:2rem 1.5rem 4rem;}
   .dashboard{display:grid; grid-template-columns:1fr; gap:0 2.5rem;}
   .col-right{margin-top:2.5rem;}
   @media (min-width:960px){
-    .dashboard{grid-template-columns:380px 1fr; align-items:start;}
-    .col-right{margin-top:0;}
+    html, body{overflow:hidden;}
+    .wrap{height:100vh; max-height:100vh; display:flex; flex-direction:column; padding:1.5rem 1.5rem 1rem; overflow:hidden;}
+    h1, .subtitle{flex:none;}
+    .dashboard{flex:1 1 auto; min-height:0; display:flex; flex-direction:row; gap:2.5rem;}
     .col{min-width:0;}
-    .col-left{position:sticky; top:1.5rem; align-self:start; max-height:calc(100vh - 3rem); overflow-y:auto; padding-right:4px;}
+    .col-left{flex:0 0 460px; height:100%; overflow-y:auto; padding-right:6px; margin-top:0;}
+    .col-right{flex:1 1 auto; height:100%; overflow-y:auto; padding-right:6px; margin-top:0;}
   }
   h1{font-size:20px; font-weight:600; margin:0 0 4px;}
   .subtitle{font-size:13px; color:var(--text-secondary); margin:0 0 1.75rem;}
@@ -212,10 +216,10 @@
       <p style="font-size:13px; color:var(--text-secondary); margin:0 0 10px;">Download everything below as a structured XML file \u2014 hand it to an AI agent (or paste its contents into a chat) to get help spotting problems or planning next steps.</p>
       <button id="export-xml">Export for AI analysis (.xml)</button>
 
+      <p class="save-note" style="text-align:left; margin-top:2rem;">Your numbers are saved on this device. <button class="reset-link" id="reset-all">Reset to defaults</button></p>
+
     </div>
   </div>
-
-  <p class="save-note">Your numbers are saved on this device. <button class="reset-link" id="reset-all">Reset to defaults</button></p>
 </div>
 
 <script>
