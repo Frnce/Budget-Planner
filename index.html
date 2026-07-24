@@ -52,9 +52,10 @@
   .dashboard{display:grid; grid-template-columns:1fr; gap:0 2.5rem;}
   .col-right{margin-top:2.5rem;}
   @media (min-width:960px){
-    .dashboard{grid-template-columns:1.35fr 1fr; align-items:start;}
+    .dashboard{grid-template-columns:380px 1fr; align-items:start;}
     .col-right{margin-top:0;}
     .col{min-width:0;}
+    .col-left{position:sticky; top:1.5rem; align-self:start; max-height:calc(100vh - 3rem); overflow-y:auto; padding-right:4px;}
   }
   h1{font-size:20px; font-weight:600; margin:0 0 4px;}
   .subtitle{font-size:13px; color:var(--text-secondary); margin:0 0 1.75rem;}
@@ -112,10 +113,29 @@
   <div class="dashboard">
     <div class="col col-left">
 
+      <div class="row" style="margin-bottom:10px; justify-content:space-between;">
+        <div class="row" style="margin-bottom:0;">
+          <button id="cal-prev" aria-label="Previous month">&larr;</button>
+          <button id="cal-today">Today</button>
+          <button id="cal-next" aria-label="Next month">&rarr;</button>
+        </div>
+      </div>
+      <div class="row" style="margin-bottom:10px;">
+        <label style="font-size:13px; color:var(--text-secondary);">Jump to date</label>
+        <input type="date" id="date-search" style="height:36px;">
+        <button id="date-search-clear">Clear</button>
+      </div>
+      <div id="calendar-wrap" style="margin-bottom:1.5rem;"></div>
+
+      <div class="section-label"><span>Summary</span></div>
+      <div id="summary-cards" class="cards" style="margin-bottom:0;"></div>
+
+    </div>
+
+    <div class="col col-right">
+
       <div class="section-label"><span>Payouts</span></div>
       <div id="payout-list" class="cards"></div>
-
-      <div id="summary-cards" class="cards"></div>
 
       <div style="margin-bottom:1.5rem;">
         <div class="section-label">
@@ -133,23 +153,7 @@
         <div id="variable-list"></div>
       </div>
 
-      <div class="row" style="margin-bottom:10px; justify-content:space-between;">
-        <div class="row" style="margin-bottom:0;">
-          <button id="cal-prev" aria-label="Previous month">&larr;</button>
-          <button id="cal-today">Today</button>
-          <button id="cal-next" aria-label="Next month">&rarr;</button>
-        </div>
-        <div class="row" style="margin-bottom:0;">
-          <label style="font-size:13px; color:var(--text-secondary);">Jump to date</label>
-          <input type="date" id="date-search" style="height:36px;">
-          <button id="date-search-clear">Clear</button>
-        </div>
-      </div>
-      <div id="calendar-wrap" style="margin-bottom:0;"></div>
-
-    </div>
-
-    <div class="col col-right">
+      <div class="divider"></div>
 
       <div class="section-label">
         <span>Debts (snowball: smallest balance first)</span>
